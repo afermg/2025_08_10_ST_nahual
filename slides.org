@@ -1,0 +1,116 @@
+#+TITLE: Too many models: Deploy and run models from isolated environments
+#+OPTIONS: ^:nil H:2 num:t toc:1
+#+DATE: 2025/04/03
+#+Author: Alán F. Muñoz
+#+LaTeX_CLASS: beamer
+#+BEAMER_THEME: metropolis
+#+BEAMER_FRAME_LEVEL: 3
+#+LATEX_HEADER: \usepackage[inkscapelatex=false]{svg}
+* Introduction
+** We have multiple pipelines that process imaging data
+- CellProfiler (+Cellpose or other exetnsions)
+- starrynight
+- aliby
+- Good ol' python scripts
+  
+** There are models 
+** Hasn't this been solved before?
+Partially:
+- BioImage Model Zoo: Standardised model description, limited fields.
+  - Still stores dependencies in environment. Its scope is limited to DL models.
+- Bilayers: Includes parameters.
+  
+** The problem
+We need to try different models, as we do not know a priori which one performs best
+- Tracking (trackastra, ultrack)
+- Embedding (DINO, CellPaintingCNN, cp_measure)
+- Segmentation (Cellpose, cellSAM)
+  
+** The problem
+To test different models:
+- More models equal more likely dependency issues
+- This, We need to isolate models in a reproducible environment
+  
+** What do other people do?
+- Common solution: Multiple environments coordinating via filesystems
+- [[https://github.com/afermg/baby][BABY]] (seg+track+lineage for yeast): REST API, http server-client
+- [[https://github.com/roboflow][Roboflow]]: REST API, they provide compute
+  
+** The approach is inspired by ollama
+[[figs/ollama.png]]
+  
+* My current attempt at solving the problem
+** The stack (1st attempt)
+- Nix for reproducible model deployments
+- FASTAPI for REST API server
+- aliby as the "model consumer"
+  
+** Further research
+- HTTP POST has a limit of ~2MB for a message
+  - a) Use upload mechanism to split into multiple packets
+  - b) Look for an alternative methods
+    
+** <Tangent 1>
+In the REST API world, base64 encoding is ubiquituous!? (~35% encoding overhead
+
+** The <3 of the problem: How to send/receive parameters, arrays and hashes (dicts)
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
+
+** The evolution of ZMQ
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
+Lightweight, broker-less transport libraries.
+
+- ZeroMQ (ØMQ): Generic networking library, LGPL -> (2023) MPL License, C++.
+  - No updates, usable but "stale"
+- [[https://nanomsg.org/documentation-zeromq.html][nanomsg]] (2014-2021): Scalability protocols, MIT licensed, C
+  - Provides common communication patterns
+- nanomsg-next-gen (nng, rewrite of nanomsg), Overall Improvements on nanomsg, MIT licensed, C
+- Python bindings: pynng
+  
+** <Tangent 2>
+pynng MUST be in the same environment as the models.
+a) Use =uv= to install everything
+b) Build a nixpkgs derivation and add it
+
+** <Tangent 2>
+In the process I officially a nixpkgs maintainer.
+[[./figs/nixpkgs_merged.png]]
+
+** The stack (2nd attempt)
+- Nix for reproducible model deployments
+- Pynng for data transmission
+  - Server (per-model)
+  - Client (nahual)
+    
+- aliby as the "model consumer"
+** Nahual: A collection of layers
+[[./figs/nahual_github.png]]
+[[./figs/logo.svg]]
+  
+** What are the advantages of nng?
+- Transport protocols that minimise duplication
+  - inproc: Within process
+  - ipc: Between processes
+  - bsd socket: Socket transport
+  - udp: internet protocol. Guarantees order.
+    
+** What are the advantages of nng?
+Build once, deploy anytime within one or between multiple servers
+- Servers with GPUs do segmentation/embedding
+- Server with CPUs do orchestration/IO
+  
+** Other options I did not try
+- Kafka
+  
+* Results (so far)
+* Conclusion
+** Am I needlessly complicating things?
+From ØMQ's guide:
+#+begin_quote
+...The real physics of software is the physics of people–specifically, our limitations when it comes to complexity, and our desire to work together to solve large problems in pieces. This is the science of programming: make building blocks that people can understand and use easily, and people will work together to solve the very largest problems.
+#+end_quote
+
