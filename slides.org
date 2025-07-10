@@ -11,61 +11,70 @@
 - CellProfiler (+Cellpose or other exetnsions)
 - starrynight
 - aliby
-- Good ol' python scripts
-  
-** There are models 
+- Good old python scripts
+** New models are coming out very often
+- Different dependencies
+- Unique interfaces and pre/post data processing
 ** Hasn't this been solved before?
-Partially:
+Some attempts:
 - BioImage Model Zoo: Standardised model description, limited fields.
   - Still stores dependencies in environment. Its scope is limited to DL models.
-- Bilayers: Includes parameters.
+- Bilayers: Includes parameters, (AFAIK) no existing collection of models.
   
 ** The problem
-We need to try different models, as we do not know a priori which one performs best
+Often we would like to try different models/methods, as we do not know a priori which one performs best for a new dataset
+- Segmentation (Cellpose, cellSAM)
 - Tracking (trackastra, ultrack)
 - Embedding (DINO, CellPaintingCNN, cp_measure)
-- Segmentation (Cellpose, cellSAM)
+  ...
   
 ** The problem
 To test different models:
-- More models equal more likely dependency issues
-- This, We need to isolate models in a reproducible environment
+- more models = more likely dependency issues
+- We need to isolate models in a reproducible environment
+  - Isolated Python environments
+  - Containers (e.g., docker, podman)
+  - Nix
   
 ** What do other people do?
-- Common solution: Multiple environments coordinating via filesystems
-- [[https://github.com/afermg/baby][BABY]] (seg+track+lineage for yeast): REST API, http server-client
-- [[https://github.com/roboflow][Roboflow]]: REST API, they provide compute
+- Common solution: Multiple environments coordinating via filesystems.
+- [[https://github.com/afermg/baby][BABY]] (seg+track+lineage for yeast): Web API, HTTP server-client interface.
+- [[https://github.com/roboflow][Roboflow]]: Web API, SaaS or self-hosted. Desktop app/Docker/Python SDK.
   
-** The approach is inspired by ollama
+** The Ollama approach
 [[figs/ollama.png]]
   
+** Ollama demo
+- Basic command line usage
+- Integration with other tools
+  
 * My current attempt at solving the problem
-** The stack (1st attempt)
+** The stack
 - Nix for reproducible model deployments
 - FASTAPI for REST API server
-- aliby as the "model consumer"
+- Python script as the "model consumer"
   
-** Further research
+** An HTTP Web API may not be ideal
 - HTTP POST has a limit of ~2MB for a message
   - a) Use upload mechanism to split into multiple packets
   - b) Look for an alternative methods
     
-** <Tangent 1>
-In the REST API world, base64 encoding is ubiquituous!? (~35% encoding overhead
+** Tangent 1
+In the Web API world, base64 encoding is everywhere!? (~35% encoding overhead)
 
-** The <3 of the problem: How to send/receive parameters, arrays and hashes (dicts)
-:PROPERTIES:
-:BEAMER_act: [<+->]
-:END:
-
-** The evolution of ZMQ
+** The <3 of the problem: How to send/receive arbitrary data structures
+- Dictionaries (for parameters)
+- Numpy arrays (for data)
+- (potentially) DataFrames/pyarrow
+ 
+** Enter ØMQ (and successors)
 :PROPERTIES:
 :BEAMER_act: [<+->]
 :END:
 Lightweight, broker-less transport libraries.
 
 - ZeroMQ (ØMQ): Generic networking library, LGPL -> (2023) MPL License, C++.
-  - No updates, usable but "stale"
+  - No updates, usable but "stale".
 - [[https://nanomsg.org/documentation-zeromq.html][nanomsg]] (2014-2021): Scalability protocols, MIT licensed, C
   - Provides common communication patterns
 - nanomsg-next-gen (nng, rewrite of nanomsg), Overall Improvements on nanomsg, MIT licensed, C
@@ -77,22 +86,24 @@ a) Use =uv= to install everything
 b) Build a nixpkgs derivation and add it
 
 ** <Tangent 2>
-In the process I officially a nixpkgs maintainer.
+In the process of solving this tangential problem I one becomes a nixpkgs maintainer.
 [[./figs/nixpkgs_merged.png]]
 
-** The stack (2nd attempt)
+** The stack (attempt 2)
 - Nix for reproducible model deployments
-- Pynng for data transmission
+- Pynng for data transport
   - Server (per-model)
-  - Client (nahual)
+  - Client (Nahual)
     
 - aliby as the "model consumer"
 ** Nahual: A collection of layers
+#+ATTR_LATEX: width=0.7\linewidth
 [[./figs/nahual_github.png]]
+#+ATTR_LATEX: width=0.7\linewidth
 [[./figs/logo.svg]]
   
 ** What are the advantages of nng?
-- Transport protocols that minimise duplication
+- Diverse transport protocols, some reduce the number of copies
   - inproc: Within process
   - ipc: Between processes
   - bsd socket: Socket transport
@@ -103,11 +114,32 @@ Build once, deploy anytime within one or between multiple servers
 - Servers with GPUs do segmentation/embedding
 - Server with CPUs do orchestration/IO
   
-** Other options I did not try
-- Kafka
+# ** Other options I did not try
+# - Kafka
   
 * Results (so far)
+Implemented trackastra and DINOv2 server/client
+- MVP
+- Defined basic structure
+  
+* Demo
+  
+* Next steps
+- Integrate into my GSK pipelining framework.
+- Increase number of supported models/methods.	
+- Support multiple instances of a model loaded on memory server-side.
+- Formalize supported packet formats: (e.g., numpy arrays, dictionary, pyarrow).
+- Document server-side API.
+- Support containers that wrap the Nix derivations.
+  
 * Conclusion
+** Potential applications
+- Benchmark different models for their task (e.g., tracking, embeddings)
+- Develop fine-tuning environments to tweak existing models
+- Develop better pipelines that are not restricted by dependencies
+- Distribute compute across available servers to tackle larger datasets
+- Develop marimo notebooks that switches models to quickly know if a model is useful for a given use-case
+ 
 ** Am I needlessly complicating things?
 From ØMQ's guide:
 #+begin_quote
