@@ -96,11 +96,11 @@ In the process of solving this tangential problem I one becomes a nixpkgs mainta
   - Client (Nahual)
     
 - aliby as the "model consumer"
-** Nahual: A collection of layers
-#+ATTR_LATEX: width=0.7\linewidth
-[[./figs/nahual_github.png]]
-#+ATTR_LATEX: width=0.7\linewidth
+** Nahual: Distributing data processing across environments
+#+ATTR_LATEX: width=0.3\linewidth
 [[./figs/logo.svg]]
+#+ATTR_LATEX: width=0.3\linewidth
+[[./figs/nahual_github.png]]
   
 ** What are the advantages of nng?
 - Diverse transport protocols, some reduce the number of copies
@@ -120,22 +120,27 @@ Build once, deploy anytime within one or between multiple servers
 * Results (so far)
 Implemented trackastra and DINOv2 server/client
 - MVP
-- Defined basic structure
+- Defined basic structure:
+  - Clients (setup -> process)
+  - tracking
   
 * Demo
   
 * Next steps
 - Integrate into my GSK pipelining framework.
-- Increase number of supported models/methods.	
+- Increase number of supported models/methods.
+- Support model switching/stopping from client
 - Support multiple instances of a model loaded on memory server-side.
 - Formalize supported packet formats: (e.g., numpy arrays, dictionary, pyarrow).
 - Document server-side API.
 - Support containers that wrap the Nix derivations.
   
-* Conclusion
+* Conclusions
 ** Potential applications
+- Speed up processing by reducing GPU idleness
 - Benchmark different models for their task (e.g., tracking, embeddings)
 - Develop fine-tuning environments to tweak existing models
+** Potential applications
 - Develop better pipelines that are not restricted by dependencies
 - Distribute compute across available servers to tackle larger datasets
 - Develop marimo notebooks that switches models to quickly know if a model is useful for a given use-case
@@ -145,4 +150,8 @@ From ØMQ's guide:
 #+begin_quote
 ...The real physics of software is the physics of people–specifically, our limitations when it comes to complexity, and our desire to work together to solve large problems in pieces. This is the science of programming: make building blocks that people can understand and use easily, and people will work together to solve the very largest problems.
 #+end_quote
+
+** Tangent 3: The impact of reproducibility
+Confidence on 100% reproducible environments means that we can rescue old models from oblivion.
+It also makes it possible to evaluate reported results in existing papers, as we can package pre/post processing alongside models.
 
