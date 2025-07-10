@@ -8,7 +8,7 @@
 #+LATEX_HEADER: \usepackage[inkscapelatex=false]{svg}
 * Introduction
 ** We have multiple pipelines that process imaging data
-- CellProfiler (+Cellpose or other exetnsions)
+- CellProfiler (+Cellpose or other extensions)
 - starrynight
 - aliby
 - Good old python scripts
@@ -42,7 +42,7 @@ To test different models:
 - [[https://github.com/roboflow][Roboflow]]: Web API, SaaS or self-hosted. Desktop app/Docker/Python SDK.
   
 ** The Ollama approach
-[[figs/ollama.png]]
+[[./figs/ollama.png]]
   
 ** Ollama demo
 - Basic command line usage
@@ -73,7 +73,7 @@ In the Web API world, base64 encoding is everywhere!? (~35% encoding overhead)
 :END:
 Lightweight, broker-less transport libraries.
 
-- ZeroMQ (ØMQ): Generic networking library, LGPL -> (2023) MPL License, C++.
+- ZeroMQ (ØMQ): Generic networking library, LGP (2007) L -> (2023) MPL License, C++.
   - No updates, usable but "stale".
 - [[https://nanomsg.org/documentation-zeromq.html][nanomsg]] (2014-2021): Scalability protocols, MIT licensed, C
   - Provides common communication patterns
@@ -89,44 +89,61 @@ b) Build a nixpkgs derivation and add it
 In the process of solving this tangential problem I one becomes a nixpkgs maintainer.
 [[./figs/nixpkgs_merged.png]]
 
-** The stack (attempt 2)
+** Stack (attempt 2)
 - Nix for reproducible model deployments
 - Pynng for data transport
   - Server (per-model)
+    - trackastra
+    - DINOv2
   - Client (Nahual)
     
 - aliby as the "model consumer"
 ** Nahual: Distributing data processing across environments
-#+ATTR_LATEX: width=0.3\linewidth
-[[./figs/logo.svg]]
-#+ATTR_LATEX: width=0.3\linewidth
+#+ATTR_LATEX: :width 0.5\linewidth
 [[./figs/nahual_github.png]]
+#+ATTR_LATEX: :width 0.4\linewidth
+[[./figs/logo.svg]]
   
-** What are the advantages of nng?
-- Diverse transport protocols, some reduce the number of copies
-  - inproc: Within process
-  - ipc: Between processes
-  - bsd socket: Socket transport
-  - udp: internet protocol. Guarantees order.
-    
-** What are the advantages of nng?
-Build once, deploy anytime within one or between multiple servers
+** What are the advantages over http?
+Very simple implementation.
+Build once, deploy anytime within one or across multiple servers
 - Servers with GPUs do segmentation/embedding
 - Server with CPUs do orchestration/IO
   
-# ** Other options I did not try
-# - Kafka
-  
-* Results (so far)
+** What are the advantages over http?
+[[./figs/process-transport.png]]
+
+** What are the advantages over http?
+- Diverse transport protocols, some reduce the copy events
+  - inproc: Within process
+  - ipc: Between processes
+  - bsd socket: Socket transport
+  - udp/tcp: internet protocols.
+    
+** I used the simple pirate pattern
+Simple pirate pattern
+#+ATTR_LATEX: :width 0.5\linewidth
+[[./figs/simple-pirate-pattern.png]]
+
+** High throughput will require some adjustments
+Lazy pirate pattern
+#+ATTR_LATEX: :width 0.5\linewidth
+[[./figs/lazy-pirate-pattern.png]]
+
+** Results (so far)
 Implemented trackastra and DINOv2 server/client
 - MVP
 - Defined basic structure:
-  - Clients (setup -> process)
-  - tracking
   
-* Demo
+  - model setup: Pick your model and relevant parameters
+  - process data: send a your numpy arrays for processing
   
-* Next steps
+** Demo
+- trackastra
+- dinov2
+  
+* Conclusions
+** Next steps
 - Integrate into my GSK pipelining framework.
 - Increase number of supported models/methods.
 - Support model switching/stopping from client
@@ -135,11 +152,11 @@ Implemented trackastra and DINOv2 server/client
 - Document server-side API.
 - Support containers that wrap the Nix derivations.
   
-* Conclusions
 ** Potential applications
 - Speed up processing by reducing GPU idleness
 - Benchmark different models for their task (e.g., tracking, embeddings)
 - Develop fine-tuning environments to tweak existing models
+  
 ** Potential applications
 - Develop better pipelines that are not restricted by dependencies
 - Distribute compute across available servers to tackle larger datasets
